@@ -4,10 +4,10 @@
     <body>
         <%- include('../includes/navigation.ejs') %>
         <main>
-            <% if(orders.items.length > 0) { %>
+            <% if(orders.products.length > 0) { %>
                 <ul>
-                    <% orders.items.forEach((product, index) => { %>
-                        <li><%= product.title + ' (' + product.quantity + ')' %></li>
+                    <% orders.products.forEach((p, index) => { %>
+                        <li><%= p.productId.title + ' (' + p.quantity + ')' %></li>
                     <% }) %>
                 </ul>
             <% } else { %>
