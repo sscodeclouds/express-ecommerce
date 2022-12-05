@@ -1,47 +1,67 @@
+const path = require('path');
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
-const path = require('path');
+const session = require('express-session');
+const MongoDBStore = require('connect-mongodb-session')(session);
+const flash = require('connect-flash');
+const MONGODB_URI = 'mongodb+srv://ecomm-sourav-93:Q262BP1wJEzGqdS3@cluster0.aniqof0.mongodb.net/shop';
+
+const errorController = require('./controllers/error');
+const User = require('./models/user');
+
+const app = express();
+const store = new MongoDBStore({
+  uri: MONGODB_URI,
+  collection: 'sessions'
+});
+
+app.use(flash());
+
+app.set('view engine', 'ejs');
+app.set('views', 'views');
+
 const adminRoutes = require('./routes/admin');
 const shopRoutes = require('./routes/shop');
-const errorController = require('./controllers/error');
-const User = require('./models/user')
-const app = express();
-const port = 3000;
+const authRoutes = require('./routes/auth');
 
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
-app.set('view engine', 'ejs');
+app.use(
+    session({secret: 'my secret', resave: false, saveUninitialized: false, store})
+);
+
 app.use((req, res, next) => {
-    User.findById('637fd6ba2d871ca324490c74')
-        .then(user => {
-            req.user = user;
-            next();
-        })
-        .catch(err => console.log(err))
+  if(!req.session.user) {
+    return next();
+  }
+  User.findById(req.session.user._id)
+      .then(user => {
+        req.user = user;
+        next();
+      })
+      .catch(err => console.log(err))
 });
+
+app.use((req, res, next) => {
+    res.locals.isAuthenticated = req.session.isLoggedIn;
+    next();
+});
+
 app.use('/admin', adminRoutes);
 app.use(shopRoutes);
+app.use(authRoutes);
 
 app.use(errorController.get404);
 
-mongoose.connect('mongodb+srv://ecomm-sourav-93:Q262BP1wJEzGqdS3@cluster0.aniqof0.mongodb.net/shop?retryWrites=true&w=majority')
-    .then(() => {
-
-        User.findOne()
-            .then(user => {
-                if (!user) {
-                    const user = new User({
-                        name: 'Sourav',
-                        email: 'sourav@gmail.com',
-                        cart: {
-                            items: []
-                        }
-                    });
-                    user.save();
-                }
-            })
-            .catch(err => console.log(err))
-        app.listen(3000);
-    })
-    .catch(err => console.log(err))
+mongoose
+  .connect(
+    MONGODB_URI
+  )
+  .then(() => {
+    app.listen(3000);
+  })
+  .catch(err => {
+    console.log(err);
+  });
