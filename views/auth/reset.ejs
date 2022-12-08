@@ -13,7 +13,8 @@
     <form class="login-form" action="/reset" method="POST">
         <div class="form-control">
             <label for="email">E-Mail</label>
-            <input type="email" name="email" id="email">
+            <input type="email" name="email" id="email" value="<%= oldInput.email %>" class="<%= validationErrors.find(e => e.param === 'email') ? 'invalid' : '' %>">
+            <%- validationErrors.find(e => e.param === 'email') ? `<span class="validation-error">${validationErrors.find(e => e.param === 'email').msg}</span>` : '' %>
         </div>
         <button class="btn" type="submit">Reset Password</button>
     </form>
