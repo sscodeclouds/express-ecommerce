@@ -2,12 +2,26 @@ const {validationResult} = require('express-validator');
 const Product = require('../models/product');
 
 exports.getAddProduct = (req, res, next) => {
+    let errorMessage = req.flash('error');
+    if(errorMessage.length > 0) {
+        errorMessage = errorMessage[0];
+    }else {
+        errorMessage = null;
+    }
+    let successMessage = req.flash('success');
+    if(successMessage.length > 0) {
+        successMessage = successMessage[0];
+    }else {
+        successMessage = null;
+    }
   res.render('admin/edit-product', {
     pageTitle: 'Add Product',
     path: '/admin/add-product',
     editing: false,
     oldInput: {},
-    validationErrors: []
+    validationErrors: [],
+      errorMessage,
+      successMessage
   });
 };
 
@@ -35,24 +49,51 @@ exports.postAddProduct = (req, res, next) => {
                 description,
                 imageUrl,
             },
+            errorMessage: '',
+            successMessage: '',
             validationErrors: errors.array()
         });
     }
   product
     .save()
-    .then(result => {
-      // console.log(result);
-      console.log('Created Product');
+    .then(() => {
+        req.flash('success', 'Product created successfully');
       res.redirect('/admin/products');
     })
     .catch(err => {
-      console.log(err);
+        return res.status(500).render('admin/edit-product', {
+            pageTitle: 'Add Product',
+            path: '/admin/add-product',
+            editing: false,
+            oldInput: {
+                title,
+                price,
+                description,
+                imageUrl,
+            },
+            errorMessage: 'Some error occurs. Please try again.',
+            successMessage: '',
+            validationErrors: []
+        });
     });
 };
 
 exports.getEditProduct = (req, res, next) => {
+    let errorMessage = req.flash('error');
+    if(errorMessage.length > 0) {
+        errorMessage = errorMessage[0];
+    }else {
+        errorMessage = null;
+    }
+    let successMessage = req.flash('success');
+    if(successMessage.length > 0) {
+        successMessage = successMessage[0];
+    }else {
+        successMessage = null;
+    }
   const editMode = req.query.edit;
   if (!editMode) {
+      req.flash('error', 'Request is invalid');
     return res.redirect('/');
   }
   const prodId = req.params.productId;
@@ -66,10 +107,12 @@ exports.getEditProduct = (req, res, next) => {
         path: '/admin/edit-product',
         editing: editMode,
         product: product,
-        validationErrors: []
+        validationErrors: [],
+          errorMessage,
+          successMessage
       });
     })
-    .catch(err => console.log(err));
+    .catch(err => next(new Error(err)));
 };
 
 exports.postEditProduct = (req, res, next) => {
@@ -93,30 +136,79 @@ exports.postEditProduct = (req, res, next) => {
                 imageUrl: updatedImageUrl,
             },
             oldInput: {},
-            validationErrors: errors.array()
+            validationErrors: errors.array(),
+            errorMessage: '',
+            successMessage: ''
         });
     }
 
   Product.findById(prodId)
     .then(product => {
       if(product.userId.toString() !== req.user._id.toString()) {
+          req.flash('error', 'You do not have permission');
           return res.redirect('/admin/products');
       }
       product.title = updatedTitle;
       product.price = updatedPrice;
       product.description = updatedDesc;
       product.imageUrl = updatedImageUrl;
-      console.log(product)
       return product.save()
           .then(() => {
+              req.flash('success', 'Product updated successfully');
               res.redirect('/admin/products');
           })
-          .catch(err => console.log(err));
+          .catch(() => {
+              return res.status(500).render('admin/edit-product', {
+                  pageTitle: 'Edit Product',
+                  path: '/admin/edit-product',
+                  editing: true,
+                  product: {
+                      _id: prodId,
+                      title: updatedTitle,
+                      price: updatedPrice,
+                      description: updatedDesc,
+                      imageUrl: updatedImageUrl,
+                  },
+                  oldInput: {},
+                  validationErrors: [],
+                  errorMessage: 'Some error occurred. Please try again.',
+                  successMessage: ''
+              });
+          });
     })
-    .catch(err => console.log(err));
+    .catch(() => {
+        return res.status(500).render('admin/edit-product', {
+            pageTitle: 'Edit Product',
+            path: '/admin/edit-product',
+            editing: true,
+            product: {
+                _id: prodId,
+                title: updatedTitle,
+                price: updatedPrice,
+                description: updatedDesc,
+                imageUrl: updatedImageUrl,
+            },
+            oldInput: {},
+            validationErrors: [],
+            errorMessage: 'Invalid product.',
+            successMessage: ''
+        });
+    });
 };
 
 exports.getProducts = (req, res, next) => {
+    let errorMessage = req.flash('error');
+    if(errorMessage.length > 0) {
+        errorMessage = errorMessage[0];
+    }else {
+        errorMessage = null;
+    }
+    let successMessage = req.flash('success');
+    if(successMessage.length > 0) {
+        successMessage = successMessage[0];
+    }else {
+        successMessage = null;
+    }
   Product.find({userId: req.user._id})
     // .select('title price -_id')
     // .populate('userId', 'name')
@@ -125,9 +217,11 @@ exports.getProducts = (req, res, next) => {
         prods: products,
         pageTitle: 'Admin Products',
         path: '/admin/products',
+          errorMessage,
+          successMessage
       });
     })
-    .catch(err => console.log(err));
+    .catch(err => next(new Error(err)));
 };
 
 exports.postDeleteProduct = (req, res, next) => {
@@ -135,14 +229,21 @@ exports.postDeleteProduct = (req, res, next) => {
     Product.findById(prodId)
         .then(product => {
             if(product.userId.toString() !== req.user._id.toString()) {
+                req.flash('error', 'You do not have permission');
                 return res.redirect('/admin/products');
             }
             Product.findByIdAndRemove(prodId)
                 .then(() => {
-                    console.log('DESTROYED PRODUCT');
+                    req.flash('success', 'Product removed successfully');
                     res.redirect('/admin/products');
                 })
-                .catch(err => console.log(err));
+                .catch(() => {
+                    req.flash('error', 'Some error occurred. Please try again.');
+                    res.redirect('/admin/products');
+                });
         })
-        .catch(err => console.log(err));
+        .catch(() => {
+            req.flash('error', 'Invalid product.');
+            res.redirect('/admin/products');
+        });
 };

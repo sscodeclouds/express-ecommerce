@@ -24,16 +24,23 @@ const transporter = nodemailer.createTransport({
 });
 
 exports.getLogin = (req, res, next) => {
-  let message = req.flash('error');
-  if(message.length > 0) {
-      message = message[0];
+  let errorMessage = req.flash('error');
+  if(errorMessage.length > 0) {
+      errorMessage = errorMessage[0];
   }else {
-      message = null;
+      errorMessage = null;
   }
+    let successMessage = req.flash('success');
+    if(successMessage.length > 0) {
+        successMessage = successMessage[0];
+    }else {
+        successMessage = null;
+    }
   res.render('auth/login', {
     path: '/login',
     pageTitle: 'Login',
-    errorMessage: message,
+    errorMessage,
+      successMessage,
       oldInput: {
           email: '',
           password: ''
@@ -43,16 +50,23 @@ exports.getLogin = (req, res, next) => {
 };
 
 exports.getSignup = (req, res, next) => {
-    let message = req.flash('error');
-    if(message.length > 0) {
-        message = message[0];
+    let errorMessage = req.flash('error');
+    if(errorMessage.length > 0) {
+        errorMessage = errorMessage[0];
     }else {
-        message = null;
+        errorMessage = null;
+    }
+    let successMessage = req.flash('success');
+    if(successMessage.length > 0) {
+        successMessage = successMessage[0];
+    }else {
+        successMessage = null;
     }
   res.render('auth/signup', {
     path: '/signup',
     pageTitle: 'Signup',
-    errorMessage: message,
+    errorMessage,
+    successMessage,
       oldInput: {
           name: '',
           email: '',
@@ -64,16 +78,23 @@ exports.getSignup = (req, res, next) => {
 };
 
 exports.getReset = (req, res, next) => {
-    let message = req.flash('error');
-    if(message.length > 0) {
-        message = message[0];
+    let errorMessage = req.flash('error');
+    if(errorMessage.length > 0) {
+        errorMessage = errorMessage[0];
     }else {
-        message = null;
+        errorMessage = null;
+    }
+    let successMessage = req.flash('success');
+    if(successMessage.length > 0) {
+        successMessage = successMessage[0];
+    }else {
+        successMessage = null;
     }
     res.render('auth/reset', {
         path: '/reset',
         pageTitle: 'Reset Password',
-        errorMessage: message,
+        errorMessage,
+        successMessage,
         oldInput: {
             email: ''
         },
@@ -89,16 +110,23 @@ exports.getNewPassword = (req, res, next) => {
                 req.flash('error', 'Link is invalid. Please try again.');
                 return res.redirect('/reset');
             }
-            let message = req.flash('error');
-            if(message.length > 0) {
-                message = message[0];
+            let errorMessage = req.flash('error');
+            if(errorMessage.length > 0) {
+                errorMessage = errorMessage[0];
             }else {
-                message = null;
+                errorMessage = null;
+            }
+            let successMessage = req.flash('success');
+            if(successMessage.length > 0) {
+                successMessage = successMessage[0];
+            }else {
+                successMessage = null;
             }
             res.render('auth/new-password', {
                 path: '/reset',
                 pageTitle: 'Update Password',
-                errorMessage: message,
+                errorMessage,
+                successMessage,
                 token,
                 oldInput: {
                     password: '',
@@ -107,7 +135,7 @@ exports.getNewPassword = (req, res, next) => {
                 validationErrors: []
             });
         })
-        .catch(err => console.log(err))
+        .catch(err => next(new Error(err)));
 };
 
 exports.postLogin = (req, res, next) => {
@@ -119,6 +147,7 @@ exports.postLogin = (req, res, next) => {
             path: '/login',
             pageTitle: 'Login',
             errorMessage: '',
+            successMessage: '',
             oldInput: {
                 email,
                 password
@@ -134,19 +163,18 @@ exports.postLogin = (req, res, next) => {
                   req.session.isLoggedIn = true;
                   req.session.user = user;
                   return req.session.save(err => {
-                      console.log(err);
                       res.redirect('/');
                   });
               }
+              req.flash('error', 'Password is invalid');
               return res.redirect('/login');
           })
-          .catch(err => {
-              console.log(err);
+          .catch(() => {
               req.flash('error', 'Invalid email or password');
               res.redirect('/login')
           })
     })
-    .catch(err => console.log(err));
+    .catch(err => next(new Error(err)));
 };
 
 exports.postSignup = (req, res, next) => {
@@ -159,6 +187,7 @@ exports.postSignup = (req, res, next) => {
           path: '/signup',
           pageTitle: 'Signup',
           errorMessage: '',
+          successMessage: '',
           oldInput: {
               name,
               email,
@@ -196,9 +225,10 @@ exports.postSignup = (req, res, next) => {
                     console.log('Email sent: ' + info.response);
                 }
             });
+            req.flash('success', 'You have signed up successfully');
             res.redirect('/login');
         })
-        .catch(err => console.log(err));
+        .catch(err => next(new Error(err)));
 };
 
 exports.postReset = (req, res, next) => {
@@ -210,6 +240,7 @@ exports.postReset = (req, res, next) => {
             path: '/reset',
             pageTitle: 'Reset Password',
             errorMessage: '',
+            successMessage: '',
             oldInput: {
                 email
             },
@@ -252,9 +283,10 @@ exports.postReset = (req, res, next) => {
                        console.log('Email sent: ' + info.response);
                    }
                });
-               res.redirect('/login');
+               req.flash('success', 'Reset email sent successfully');
+               res.redirect('/reset');
            })
-           .catch(err => console.log(err));
+           .catch(err => next(new Error(err)));
     });
 };
 
@@ -268,6 +300,7 @@ exports.postNewPassword = (req, res, next) => {
             path: '/reset',
             pageTitle: 'Update Password',
             errorMessage: '',
+            successMessage: '',
             token,
             oldInput: {
                 password,
@@ -291,10 +324,11 @@ exports.postNewPassword = (req, res, next) => {
                     return user.save();
                 })
                 .then(() => {
+                    req.flash('success', 'Password updated successfully');
                     return res.redirect('/login')
                 })
         })
-        .catch(err => console.log(err))
+        .catch(err => next(new Error(err)));
 };
 
 exports.postLogout = (req, res, next) => {

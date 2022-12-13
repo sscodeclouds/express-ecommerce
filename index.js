@@ -38,10 +38,13 @@ app.use((req, res, next) => {
   }
   User.findById(req.session.user._id)
       .then(user => {
+        if(!user) {
+            return new Error('User is invalid');
+        }
         req.user = user;
         next();
       })
-      .catch(err => console.log(err))
+      .catch(err => next(new Error(err)));
 });
 
 app.use((req, res, next) => {
@@ -54,6 +57,14 @@ app.use(shopRoutes);
 app.use(authRoutes);
 
 app.use(errorController.get404);
+
+app.use((error, req, res) => {
+    res.status(500).render('500', {
+        pageTitle: 'Error',
+        path: '/500',
+        isAuthenticated: req.session.isLoggedIn
+    });
+})
 
 mongoose
   .connect(

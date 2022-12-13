@@ -47,6 +47,7 @@ router.post('/signup',
                         if (user) {
                             return Promise.reject('Email exists')
                         }
+                        return true;
                     })
             })
             .normalizeEmail(),
@@ -74,6 +75,7 @@ router.post('/reset',
                     if (!user) {
                         return Promise.reject('Email does not exist')
                     }
+                    return true;
                 })
         })
         .normalizeEmail(),

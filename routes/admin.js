@@ -1,4 +1,3 @@
-const path = require('path');
 const express = require('express');
 const {check} = require('express-validator');
 
@@ -16,8 +15,8 @@ router.get('/products', isAuth, adminController.getProducts);
 // /admin/add-product => POST
 router.post('/add-product', isAuth,
     [check('title')
-        .isAlphanumeric()
-        .withMessage('Title is invalid'),
+        .notEmpty()
+        .withMessage('Title is required'),
     check('price')
         .isFloat()
         .withMessage('Price is invalid')
@@ -28,8 +27,8 @@ router.get('/edit-product/:productId', isAuth, adminController.getEditProduct);
 
 router.post('/edit-product/:productId', isAuth,
     [check('title')
-        .isAlphanumeric()
-        .withMessage('Title is invalid'),
+        .notEmpty()
+        .withMessage('Title is required'),
         check('price')
             .isFloat()
             .withMessage('Price is invalid')

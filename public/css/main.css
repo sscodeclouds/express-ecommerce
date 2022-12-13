@@ -232,7 +232,8 @@ form {
   color: white;
 }
 
-.user-message {
+.user-message,
+.product-message {
   margin: auto;
   width: 90%;
   border: 1px solid #4771fa;
@@ -242,10 +243,19 @@ form {
   text-align: center;
 }
 
-.user-message--error {
+.user-message--error,
+.product-message--error{
   border-color: red;
   background: rgb(255, 176, 176);
   color: red;
+}
+
+
+.user-message--success,
+.product-message--success{
+  border-color: #26e77e;
+  background: rgb(168, 238, 194);
+  color: #26e77e;
 }
 
 @media (min-width: 768px) {
