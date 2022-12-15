@@ -1,5 +1,6 @@
 const {validationResult} = require('express-validator');
 const Product = require('../models/product');
+const fileHelper = require('../util/file');
 
 exports.getAddProduct = (req, res, next) => {
     let errorMessage = req.flash('error');
@@ -169,6 +170,7 @@ exports.postEditProduct = (req, res, next) => {
       product.price = updatedPrice;
       product.description = updatedDesc;
       if(image) {
+          fileHelper.deleteFile(product.imageUrl);
           product.imageUrl = image.path.replace('\\', '/');
       }
       return product.save()
@@ -249,6 +251,7 @@ exports.postDeleteProduct = (req, res, next) => {
                 req.flash('error', 'You do not have permission');
                 return res.redirect('/admin/products');
             }
+            fileHelper.deleteFile(product.imageUrl);
             Product.findByIdAndRemove(prodId)
                 .then(() => {
                     req.flash('success', 'Product removed successfully');
