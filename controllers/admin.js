@@ -259,27 +259,23 @@ exports.getProducts = (req, res, next) => {
         .catch(err => next(new Error(err)));
 };
 
-exports.postDeleteProduct = (req, res, next) => {
-  const prodId = req.body.productId;
+exports.deleteProduct = (req, res, next) => {
+  const prodId = req.params.productId;
     Product.findById(prodId)
         .then(product => {
             if(product.userId.toString() !== req.user._id.toString()) {
-                req.flash('error', 'You do not have permission');
-                return res.redirect('/admin/products');
+                res.status(500).json({'message': 'You do not have permission'});
             }
             fileHelper.deleteFile(product.imageUrl);
             Product.findByIdAndRemove(prodId)
                 .then(() => {
-                    req.flash('success', 'Product removed successfully');
-                    res.redirect('/admin/products');
+                    res.status(200).json({'message': 'Product removed successfully'})
                 })
                 .catch(() => {
-                    req.flash('error', 'Some error occurred. Please try again.');
-                    res.redirect('/admin/products');
+                    res.status(500).json({'message': 'Some error occurred. Please try again.'});
                 });
         })
         .catch(() => {
-            req.flash('error', 'Invalid product.');
-            res.redirect('/admin/products');
+            res.status(500).json({'message': 'Invalid Product.'});
         });
 };
